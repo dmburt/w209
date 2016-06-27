@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <style>
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 12px
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #000;
+            shape-rendering: auto;
+        }
+
+        .x.axis path {
+            display: none;
+        }
+
+        .line {
+            fill: none;
+            stroke: #003262;
+            stroke-width: 2.5px;
+        }
+
+        .overlay {
+            fill: none;
+            pointer-events: all;
+        }
+
+        .focus circle {
+            fill: #FDB515;
+            stroke: #003262;
+            stroke-width: 2px;
+        }
+
+    </style>
+</head>
+<body>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+    var margin = {top: 50, right: 50, bottom: 100, left: 50},
+            width = 960 - margin.left - margin.right,
+            height = 600 - margin.top - margin.bottom;
+
+    var parseDate = d3.time.format("%d-%b-%y").parse,
+            bisectDate = d3.bisector(function(d) { return d.date; }).left,
+            formatValue = d3.format(",.2f");
+
+    var x = d3.time.scale()
+            .range([0, width]);
+
+    var y = d3.scale.linear()
+            .domain([70,200])
+            .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .ticks(d3.time.days)
+            .tickSize(16, 0)
+            .tickFormat(d3.time.format("%e"));
+
+    var xAxis_m = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .ticks(d3.time.months)
+            .tickSize(32, 0)
+            .tickFormat(d3.time.format("%B"));
+
+    var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+    var line = d3.svg.line()
+    // changed to step-after interpolation.
+    // this seemed to better show the differences (between readings)
+    // while avoiding the implication that blood pressure is following
+    // any particular gradient (while it is, the slopes are unknown).
+            .interpolate("step-after")
+            .x(function(d) { return x(d.date); })
+            .y(function(d) { return y(d.systolic); });
+
+    var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+    d3.tsv("BP_Nums3.tsv", function(error, data) {
+        if (error) throw error;
+
+        data.forEach(function(d) {
+            d.date = parseDate(d.date);
+            d.systolic = + d.systolic;
+        });
+
+        data.sort(function(a, b) {
+            return a.date - b.date;
+        });
+
+        x.domain(d3.extent(data, function(d) { return d.date; }));
+
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis);
+
+        svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("y", 6)
+                .attr("dy", "2em")
+                .style("text-anchor", "start")
+                .text("mmHg");
+
+        svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + (height+5) + ")")
+                .call(xAxis_m)
+                .selectAll("text")
+                .attr("stroke","#003262");
+
+        svg.append("path")
+                .datum(data)
+                .attr("class", "line")
+                .attr("d", line);
+
+        svg.append("text")
+                .attr("x", (width / 2))
+                .attr("y", 0 - 30)
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .text("SYSTOLIC BLOOD PRESSURE");
+
+        svg.append("text")
+                .attr("x", (width / 2))
+                .attr("y", 0 - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("text-decoration", "underline")
+                .text("March 20th - April 20th, 2014");
+
+        svg.append("rect")
+                .attr("id", "hyp_crisis")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", width)
+                .attr("height", y(180))
+                .attr("fill", "#E60008")
+                .attr("opacity", 0);
+
+        svg.append("text")
+                .attr("id","hyp_crisis_text")
+                .attr("x", width-10)
+                .attr("y", y(194))
+                .attr("text-anchor", "end")
+                .style("font-size", "18px")
+                .style("opacity", 0)
+                .style("fill", "#C60008")
+                .text("CRISIS");
+
+        svg.append("rect")
+                .attr("id", "hyp_stage2")
+                .attr("x", 0)
+                .attr("y", y(180))
+                .attr("width", width)
+                .attr("height", y(180))
+                .attr("fill", "#FD4A0E")
+                .attr("opacity", 0);
+
+        svg.append("text")
+                .attr("id","hyp_stage2_text")
+                .attr("x", width-10)
+                .attr("y", y(174))
+                .attr("text-anchor", "end")
+                .style("font-size", "18px")
+                .style("opacity", 0)
+                .style("fill", "#AD4A0E")
+                .text("HYPERTENSION, STAGE 2");
+
+        svg.append("rect")
+                .attr("id", "hyp_stage1")
+                .attr("x", 0)
+                .attr("y", y(160))
+                .attr("width", width)
+                .attr("height", y(180))
+                .attr("fill", "#FF9315")
+                .attr("opacity", 0);
+
+        svg.append("text")
+                .attr("id","hyp_stage1_text")
+                .attr("x", width-10)
+                .attr("y", y(154))
+                .attr("text-anchor", "end")
+                .style("font-size", "18px")
+                .style("opacity", 0)
+                .style("fill", "#AD4A0E")
+                .text("HYPERTENSION, STAGE 1");
+
+        svg.append("rect")
+                .attr("id", "pre_hyp")
+                .attr("x", 0)
+                .attr("y", y(140))
+                .attr("width", width)
+                .attr("height", y(180))
+                .attr("fill", "#FCFF4C")
+                .attr("opacity", 0);
+
+        svg.append("text")
+                .attr("id","pre_hyp_text")
+                .attr("x", width-10)
+                .attr("y", y(134))
+                .attr("text-anchor", "end")
+                .style("font-size", "18px")
+                .style("opacity", 0)
+                .style("fill", "#AD4A0E")
+                .text("PRE-HYPERTENSION");
+
+        svg.append("rect")
+                .attr("id", "normal")
+                .attr("x", 0)
+                .attr("y", y(120))
+                .attr("width", width)
+                .attr("height", y(150))
+                .attr("fill", "#1EBC16")
+                .attr("opacity", 0);
+
+        svg.append("text")
+                .attr("id","normal_text")
+                .attr("x", width-10)
+                .attr("y", y(114))
+                .attr("text-anchor", "end")
+                .style("font-size", "18px")
+                .style("opacity", 0)
+                .style("fill", "#129600")
+                .text("NORMAL");
+
+        svg.append("text")
+                .attr("x", (0))
+                .attr("y", height + 80)
+                .style("font-size", "18px")
+                .on("click", function() {
+                    var active = hyp_crisis.active ? false : true,
+                            newOpacity = active ? 0.4 : 0;
+                    d3.select("#hyp_crisis").transition().delay(10).duration(800).style("opacity", newOpacity);
+                    d3.select("#hyp_crisis_text").transition().delay(50).duration(800).style("opacity", newOpacity);
+                    d3.select("#hyp_stage2").transition().delay(10).duration(800).style("opacity", newOpacity);
+                    d3.select("#hyp_stage2_text").transition().delay(50).duration(800).style("opacity", newOpacity);
+                    d3.select("#hyp_stage1").transition().delay(10).duration(800).style("opacity", newOpacity);
+                    d3.select("#hyp_stage1_text").transition().delay(50).duration(800).style("opacity", newOpacity);
+                    d3.select("#pre_hyp").transition().delay(10).duration(800).style("opacity", newOpacity);
+                    d3.select("#pre_hyp_text").transition().delay(50).duration(800).style("opacity", newOpacity);
+                    d3.select("#normal").transition().delay(10).duration(800).style("opacity", newOpacity);
+                    d3.select("#normal_text").transition().delay(50).duration(800).style("opacity", newOpacity);
+                    hyp_crisis.active = active;
+                })
+                .text("+ Click to show danger regions for systolic pressure.");
+
+
+        var focus = svg.append("g")
+                .attr("class", "focus")
+                .style("display", "none");
+
+        focus.append("circle")
+                .attr("r", 4.5);
+
+        focus.append("text")
+                .attr("x", -10)
+                .attr("dy", -10)
+                .attr("font-size", 14);
+
+        svg.append("rect")
+                .attr("class", "overlay")
+                .attr("width", width)
+                .attr("height", height)
+                .on("mouseover", function() { focus.style("display", null); })
+                .on("mouseout", function() { focus.style("display", "none"); })
+                .on("mousemove", mousemove);
+
+        function mousemove() {
+            var x0 = x.invert(d3.mouse(this)[0]),
+                    i = bisectDate(data, x0, 1),
+                    d0 = data[i - 1],
+                    d1 = data[i],
+                    d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+            focus.attr("transform", "translate(" + x(d.date) + "," + y(d.systolic) + ")");
+            focus.select("text").text(d.systolic);
+        }
+
+    });
+
+</script>
+
