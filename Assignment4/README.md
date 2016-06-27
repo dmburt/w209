@@ -11,6 +11,8 @@ Assignment due date: 12 noon PST, day of week 8 live session
 ####..::DMBURT
 In assignment 3, I used actual systolic blood pressure readings (mine) between March 20th and April 20th, 2014.  I took these readings at various points throughout the day over the course of this period.  For the interactivity required in this exercise, I employed both a mouseover and clickable text.  The mouseover tracks the x-axis position of the mouse and displays the systolic reading on the given date.  The clickable text shows the hypertension warning-zone ranges (for a typical adult male).
 
+Live version of this (and assignment 3) available on Plunker (https://plnkr.co/users/dmburt).
+
 
 ![Screenshot of working page](https://github.com/dmburt/w209/blob/master/Assignment4/W209-DMBURT-Assgn4b.png)
 
